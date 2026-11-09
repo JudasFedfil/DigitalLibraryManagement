@@ -15,12 +15,6 @@ import patterns.strategy.SearchByTitleStrategy;
 import patterns.strategy.SearchContext;
 import repository.IDataRepository;
 
-/**
- * [STRUCTURAL PATTERN 2 - FACADE PATTERN]:
- * Cung cấp giao diện điều phối đơn giản, thống nhất cho tầng Controller,
- * ẩn đi sự phức tạp của việc kết hợp DocumentFactory, IDataRepository,
- * DocumentDecorator, SearchContext, NotificationCenter và DatabaseConnectionManager.
- */
 public class LibraryManagementFacade {
     private IDataRepository repository;
     private final DocumentFactory documentFactory;
@@ -36,7 +30,6 @@ public class LibraryManagementFacade {
         seedInitialData();
     }
 
-    // Chuyển đổi nguồn lưu trữ dữ liệu lúc runtime (Tuân thủ DIP & OCP)
     public void switchRepository(IDataRepository newRepository) {
         List<IDocument> currentDocs = this.repository.findAllDocuments();
         List<Reader> currentReaders = this.repository.findAllReaders();
@@ -57,7 +50,6 @@ public class LibraryManagementFacade {
                 + " | Nguồn lưu trữ: " + repository.getRepositoryName();
     }
 
-    // Đăng ký độc giả & gắn vào danh sách nhận thông báo (Observer Pattern)
     public Reader registerReader(String readerId, String fullName, String email, boolean subscribeNotifications) {
         if (readerId == null || readerId.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã độc giả không được để trống!");
@@ -70,7 +62,6 @@ public class LibraryManagementFacade {
         return reader;
     }
 
-    // Thêm tài liệu mới (Sử dụng Factory Method + Repository + Observer Pattern)
     public IDocument addNewDocument(String type, String id, String title, String author,
                                     String category, double baseCost, String extraMetadata) {
         if (id == null || id.trim().isEmpty()) {
@@ -90,7 +81,6 @@ public class LibraryManagementFacade {
         return repository.deleteDocument(docId);
     }
 
-    // Mượn tài liệu kèm tùy chọn dịch vụ bổ sung (Sử dụng Decorator Pattern)
     public LoanRecord borrowDocument(String readerId, String docId, boolean enableDRM, boolean enableOffline) {
         Reader reader = repository.findReaderById(readerId);
         if (reader == null) {

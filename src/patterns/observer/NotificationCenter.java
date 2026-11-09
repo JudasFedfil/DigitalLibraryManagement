@@ -3,10 +3,6 @@ package patterns.observer;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Trung tâm thông báo tự động (ConcreteSubject trong Observer Pattern).
- * Khi thư viện có tài liệu mới, NotificationCenter tự động gửi thông báo tới các độc giả đã đăng ký.
- */
 public class NotificationCenter implements ISubject {
     private final List<IObserver> observers = new ArrayList<>();
 

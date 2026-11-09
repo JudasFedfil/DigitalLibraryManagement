@@ -2,9 +2,6 @@ package patterns.decorator;
 
 import entity.IDocument;
 
-/**
- * ConcreteDecorator 2: Bổ sung tính năng tải về đọc ngoại tuyến (Offline) vào tài liệu mượn.
- */
 public class OfflineDownloadDecorator extends DocumentDecorator {
     private static final double OFFLINE_FEE = 10000.0;
 

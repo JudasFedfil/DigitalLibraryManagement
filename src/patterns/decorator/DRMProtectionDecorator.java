@@ -2,9 +2,6 @@ package patterns.decorator;
 
 import entity.IDocument;
 
-/**
- * ConcreteDecorator 1: Bổ sung tính năng bảo vệ bản quyền số (DRM) vào tài liệu mượn.
- */
 public class DRMProtectionDecorator extends DocumentDecorator {
     private static final double DRM_FEE = 5000.0;
 

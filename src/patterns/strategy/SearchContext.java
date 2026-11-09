@@ -3,10 +3,6 @@ package patterns.strategy;
 import entity.IDocument;
 import java.util.List;
 
-/**
- * Lớp ngữ cảnh (Context) trong Strategy Pattern:
- * Cho phép chuyển đổi thuật toán tìm kiếm linh hoạt tại thời điểm chạy (Runtime).
- */
 public class SearchContext {
     private ISearchStrategy strategy;
 

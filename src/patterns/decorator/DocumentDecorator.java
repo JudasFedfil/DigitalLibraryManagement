@@ -2,11 +2,6 @@ package patterns.decorator;
 
 import entity.IDocument;
 
-/**
- * [STRUCTURAL PATTERN 1 - DECORATOR PATTERN]:
- * Lớp trừu tượng bọc (wrap) một đối tượng IDocument để gắn thêm tính năng bổ sung lúc runtime
- * mà không cần sửa đổi lớp tài liệu gốc (Tuân thủ OCP & LSP).
- */
 public abstract class DocumentDecorator implements IDocument {
     protected final IDocument wrappedDocument;
 

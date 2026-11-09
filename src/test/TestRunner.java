@@ -13,15 +13,10 @@ import repository.IDataRepository;
 import repository.InMemoryRepository;
 import repository.SqlJdbcRepository;
 
-/**
- * File chạy kiểm thử tự động các chức năng và 6 Design Patterns trên Console.
- */
 public class TestRunner {
 
     public static void main(String[] args) {
-        System.out.println("======================================================================");
         System.out.println("   CHẠY KIỂM THỬ HỆ THỐNG THƯ VIỆN SỐ (CONSOLE TEST CASES)");
-        System.out.println("======================================================================\n");
 
         // Test 1: Singleton Pattern
         System.out.println("[TEST 1] Singleton Pattern (DatabaseConnectionManager):");
@@ -74,8 +69,6 @@ public class TestRunner {
         System.out.printf(" - Mượn trên DB mới: Mã phiếu %s | Tổng phí: %,.0f đ\n", loan.getLoanId(), loan.getTotalCost());
         System.out.println(" - Kết quả: PASSED\n");
 
-        System.out.println("======================================================================");
         System.out.println("   HOÀN TẤT KIỂM THỬ: 6/6 TEST CASES PASSED!");
-        System.out.println("======================================================================");
     }
 }

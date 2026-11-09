@@ -5,12 +5,6 @@ import entity.EBook;
 import entity.IDocument;
 import entity.ScientificJournal;
 
-/**
- * [CREATIONAL PATTERN 2 - FACTORY METHOD PATTERN]:
- * Đóng gói quá trình khởi tạo các đối tượng tài liệu số khác nhau (EBook, AudioBook, ScientificJournal).
- * - Tuân thủ OCP (Open/Closed Principle): Dễ dàng mở rộng thêm loại tài liệu mới mà không làm ảnh hưởng tầng gọi.
- * - Tuân thủ DIP (Dependency Inversion Principle): Trả về kiểu trừu tượng IDocument.
- */
 public class DocumentFactory {
 
     public IDocument createDocument(String type, String id, String title, String author,

@@ -1,10 +1,5 @@
 package patterns.singleton;
 
-/**
- * [CREATIONAL PATTERN 1 - SINGLETON PATTERN]:
- * Đảm bảo chỉ có duy nhất một thực thể (instance) quản lý kết nối cơ sở dữ liệu
- * trong toàn bộ vòng đời ứng dụng (sử dụng cơ chế Double-Checked Locking an toàn đa luồng).
- */
 public class DatabaseConnectionManager {
     private static volatile DatabaseConnectionManager instance;
 

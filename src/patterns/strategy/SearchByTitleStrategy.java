@@ -4,9 +4,6 @@ import entity.IDocument;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Chiến lược tìm kiếm tài liệu theo Tiêu đề.
- */
 public class SearchByTitleStrategy implements ISearchStrategy {
     @Override
     public List<IDocument> search(List<IDocument> documents, String keyword) {
