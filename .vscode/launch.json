@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Chạy Ứng Dụng (MainApp)",
+            "request": "launch",
+            "mainClass": "MainApp",
+            "vmArgs": "-Dfile.encoding=UTF-8"
+        },
+        {
+            "type": "java",
+            "name": "Chạy Kiểm Thử Console (TestRunner)",
+            "request": "launch",
+            "mainClass": "test.TestRunner",
+            "vmArgs": "-Dfile.encoding=UTF-8"
+        }
+    ]
+}
