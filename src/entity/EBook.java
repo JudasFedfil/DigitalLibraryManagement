@@ -1,9 +1,5 @@
 package entity;
 
-/**
- * Thực thể Sách Điện Tử (EBook).
- * Tuân thủ SRP (Single Responsibility Principle): Chỉ quản lý thuộc tính và thông tin của EBook.
- */
 public class EBook implements IDocument {
     private final String id;
     private final String title;

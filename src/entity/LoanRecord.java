@@ -2,10 +2,6 @@ package entity;
 
 import java.time.LocalDate;
 
-/**
- * Thực thể Phiếu mượn tài liệu (LoanRecord).
- * Tuân thủ SRP: Lưu trữ thông tin giao dịch mượn trả tài liệu của độc giả.
- */
 public class LoanRecord {
     private final String loanId;
     private final Reader reader;

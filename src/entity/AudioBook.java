@@ -1,9 +1,5 @@
 package entity;
 
-/**
- * Thực thể Sách Nói (AudioBook).
- * Tuân thủ SRP & LSP.
- */
 public class AudioBook implements IDocument {
     private final String id;
     private final String title;

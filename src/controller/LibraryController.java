@@ -10,10 +10,6 @@ import repository.InMemoryRepository;
 import repository.SqlJdbcRepository;
 import view.ILibraryView;
 
-/**
- * Tầng Điều khiển (Controller trong mô hình MVC).
- * Tuân thủ SRP & DIP: Điều phối các sự kiện từ View xuống Facade và cập nhật lại View.
- */
 public class LibraryController {
     private final LibraryManagementFacade facade;
     private final ILibraryView view;

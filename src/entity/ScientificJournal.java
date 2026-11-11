@@ -1,9 +1,5 @@
 package entity;
 
-/**
- * Thực thể Tạp chí Khoa học (ScientificJournal).
- * Tuân thủ SRP & LSP.
- */
 public class ScientificJournal implements IDocument {
     private final String id;
     private final String title;

@@ -6,10 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import patterns.observer.IObserver;
 
-/**
- * Thực thể Độc giả (Reader).
- * Đóng vai trò ConcreteObserver trong mẫu thiết kế Observer Pattern để nhận thông báo tự động.
- */
 public class Reader implements IObserver {
     private final String readerId;
     private final String fullName;
