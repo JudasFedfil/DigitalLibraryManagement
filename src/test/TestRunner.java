@@ -43,13 +43,15 @@ public class TestRunner {
         System.out.printf(" - Chi phí gốc: %,.0f đ -> Sau khi bọc: %,.0f đ\n", doc1.getAccessCost(), decorated.getAccessCost());
         System.out.println(" - Kết quả: " + (decorated.getAccessCost() == 35000 ? "PASSED" : "FAILED") + "\n");
 
-        // Test 4: Facade & Observer Pattern
-        System.out.println("[TEST 4] Facade & Observer Pattern (Thêm tài liệu & Nhận thông báo):");
+        // Test 4: Facade & Observer Pattern (Bao gồm cả Đăng ký / Hủy nhận thông báo)
+        System.out.println("[TEST 4] Facade & Observer Pattern (Thêm tài liệu & Đăng ký/Hủy nhận thông báo):");
         IDataRepository repo = new InMemoryRepository();
         LibraryManagementFacade facade = new LibraryManagementFacade(repo);
+        facade.updateReaderSubscription("DG02", false); // Độc giả DG02 hủy nhận tin
         facade.addNewDocument("EBOOK", "TL99", "Thiết kế Hệ thống", "Nguyễn Thanh Tài", "CNTT", 22000, "280;PDF");
         for (Reader r : facade.getAllReaders()) {
-            System.out.printf(" - Độc giả %s: nhận %d thông báo\n", r.getFullName(), r.getNotifications().size());
+            System.out.printf(" - Độc giả %s (Đăng ký: %s): nhận %d thông báo\n",
+                    r.getFullName(), r.isSubscribed() ? "Có" : "Không", r.getNotifications().size());
         }
         System.out.println(" - Kết quả: PASSED\n");
 

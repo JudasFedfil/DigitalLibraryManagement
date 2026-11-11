@@ -23,13 +23,14 @@ public class ConsoleLibraryView implements ILibraryView {
             System.out.println("\n================ THƯ VIỆN SỐ ================");
             controller.requestSystemStatus();
             System.out.println("1. Danh sách tài liệu");
-            System.out.println("2. Thêm tài liệu mới");
-            System.out.println("3. Tìm kiếm tài liệu");
-            System.out.println("4. Mượn tài liệu");
-            System.out.println("5. Trả tài liệu");
+            System.out.println("2. Thêm tài liệu mới (Thủ thư)");
+            System.out.println("3. Tìm kiếm tài liệu (Độc giả / Thủ thư)");
+            System.out.println("4. Mượn tài liệu (Độc giả)");
+            System.out.println("5. Trả tài liệu (Độc giả)");
             System.out.println("6. Danh sách phiếu mượn");
             System.out.println("7. Độc giả & Thông báo");
-            System.out.println("8. Chuyển đổi CSDL");
+            System.out.println("8. Đăng ký / Hủy nhận thông báo (Độc giả)");
+            System.out.println("9. Chuyển đổi CSDL (Thủ thư)");
             System.out.println("0. Thoát");
             System.out.print("Chọn chức năng: ");
 
@@ -58,6 +59,13 @@ public class ConsoleLibraryView implements ILibraryView {
                     controller.handleLoadReadersAndNotifications();
                     break;
                 case "8":
+                    System.out.print("Nhập mã độc giả (VD: DG01): ");
+                    String rId = scanner.nextLine().trim();
+                    System.out.print("Đăng ký nhận thông báo? (y/n): ");
+                    boolean sub = scanner.nextLine().trim().equalsIgnoreCase("y");
+                    controller.handleUpdateSubscription(rId, sub);
+                    break;
+                case "9":
                     controller.handleToggleDatabase();
                     break;
                 case "0":
@@ -130,7 +138,8 @@ public class ConsoleLibraryView implements ILibraryView {
     public void showReadersAndNotifications(List<Reader> readers) {
         System.out.println("\n--- ĐỘC GIẢ & THÔNG BÁO ---");
         for (Reader r : readers) {
-            System.out.printf("[%s] %s (%s)\n", r.getReaderId(), r.getFullName(), r.getEmail());
+            System.out.printf("[%s] %s (%s) - Nhận TB: %s\n",
+                    r.getReaderId(), r.getFullName(), r.getEmail(), r.isSubscribed() ? "Có" : "Không");
             for (String msg : r.getNotifications()) {
                 System.out.println("  • " + msg);
             }

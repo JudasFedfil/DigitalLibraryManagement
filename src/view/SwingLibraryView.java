@@ -5,6 +5,7 @@ import entity.IDocument;
 import entity.LoanRecord;
 import entity.Reader;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,7 +15,29 @@ import javax.swing.table.DefaultTableModel;
 public class SwingLibraryView extends JFrame implements ILibraryView {
     private LibraryController controller;
 
+    // Dữ liệu đệm phục vụ lọc hiển thị theo vai trò
+    private List<Reader> cachedReaders = new ArrayList<>();
+    private List<LoanRecord> cachedLoans = new ArrayList<>();
+    private boolean updatingCombos = false;
+
+    // Thanh chuyển đổi Vai trò (Actor Switcher)
+    private JComboBox<String> roleCombo;
+    private JLabel activeReaderLabel;
+    private JComboBox<String> activeReaderCombo;
     private JLabel statusLabel;
+    private JButton switchDbBtn;
+
+    // TabPane & Các thành phần ẩn/hiện theo quyền
+    private JTabbedPane tabbedPane;
+    private JButton deleteDocBtn;
+    private JPanel librarianAddDocPanel;
+    private JPanel librarianAddReaderPanel;
+    private JPanel readerSubscriptionPanel;
+    private JLabel readerSubStatusLabel;
+    private JButton toggleSubBtn;
+    private JScrollPane readerTableScroll;
+
+    // Bảng dữ liệu
     private DefaultTableModel docTableModel;
     private JTable docTable;
     private DefaultTableModel loanTableModel;
@@ -23,20 +46,20 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
     private JTable readerTable;
     private JTextArea notificationArea;
 
-    // Tìm kiếm
+    // Tìm kiếm (UC1)
     private JComboBox<String> searchTypeCombo;
     private JTextField searchKeywordField;
 
-    // Thêm tài liệu
+    // Thêm tài liệu (UC5 - Thủ thư)
     private JComboBox<String> docTypeCombo;
     private JTextField docIdField, docTitleField, docAuthorField, docCategoryField, docCostField, docExtraField;
 
-    // Mượn / Trả tài liệu
+    // Mượn / Trả tài liệu (UC2, UC3)
     private JComboBox<String> borrowReaderCombo;
     private JComboBox<String> borrowDocCombo;
     private JCheckBox drmCheckBox, offlineCheckBox;
 
-    // Đăng ký độc giả
+    // Thêm độc giả (UC6 - Thủ thư)
     private JTextField readerIdField, readerNameField, readerEmailField;
     private JCheckBox readerSubCheck;
 
@@ -46,7 +69,7 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
         } catch (Exception ignored) {
         }
         setTitle("Thư viện số");
-        setSize(1050, 680);
+        setSize(1080, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         initComponents();
@@ -56,27 +79,57 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
         JPanel mainPanel = new JPanel(new BorderLayout(8, 8));
         mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Thanh tiêu đề đơn giản
+        // 1. THANH TIÊU ĐỀ & CHỌN VAI TRÒ (THỦ THƯ / ĐỘC GIẢ)
         JPanel topPanel = new JPanel(new BorderLayout(10, 5));
+        topPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY),
+                new EmptyBorder(0, 0, 6, 0)
+        ));
+
+        JPanel leftTop = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         JLabel titleLabel = new JLabel("THƯ VIỆN SỐ");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
 
+        roleCombo = new JComboBox<>(new String[]{
+                "Thủ thư / Quản trị viên",
+                "Độc giả (Sinh viên / Giảng viên)"
+        });
+        roleCombo.setFont(new Font("SansSerif", Font.BOLD, 12));
+
+        activeReaderLabel = new JLabel("Tài khoản Độc giả:");
+        activeReaderCombo = new JComboBox<>();
+        activeReaderLabel.setVisible(false);
+        activeReaderCombo.setVisible(false);
+
+        roleCombo.addActionListener(e -> applyRolePermissions());
+        activeReaderCombo.addActionListener(e -> {
+            if (!updatingCombos) {
+                syncViewsForCurrentRole();
+            }
+        });
+
+        leftTop.add(titleLabel);
+        leftTop.add(new JLabel("  |   Vai trò:"));
+        leftTop.add(roleCombo);
+        leftTop.add(activeReaderLabel);
+        leftTop.add(activeReaderCombo);
+
+        JPanel rightTop = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         statusLabel = new JLabel("Đang tải...");
         statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
 
-        JButton switchDbBtn = new JButton("Chuyển đổi CSDL");
+        switchDbBtn = new JButton("Chuyển đổi CSDL");
         switchDbBtn.addActionListener(e -> controller.handleToggleDatabase());
 
-        JPanel rightTop = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightTop.add(statusLabel);
         rightTop.add(switchDbBtn);
 
-        topPanel.add(titleLabel, BorderLayout.WEST);
+        topPanel.add(leftTop, BorderLayout.WEST);
         topPanel.add(rightTop, BorderLayout.EAST);
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
-        // 3 Tab chức năng chính
-        JTabbedPane tabbedPane = new JTabbedPane();
+        // 2. 3 TAB CHỨC NĂNG CHÍNH
+        tabbedPane = new JTabbedPane();
         tabbedPane.setFont(new Font("SansSerif", Font.BOLD, 13));
 
         tabbedPane.addTab("Quản lý tài liệu", createDocumentsTab());
@@ -91,14 +144,14 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBorder(new EmptyBorder(6, 6, 6, 6));
 
-        // Thanh tìm kiếm
+        // Thanh tìm kiếm (Cả Thủ thư & Độc giả đều dùng - UC1)
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-        searchPanel.setBorder(new TitledBorder("Tìm kiếm"));
+        searchPanel.setBorder(new TitledBorder("Tìm kiếm tài liệu"));
         searchTypeCombo = new JComboBox<>(new String[]{"Tiêu đề", "Tác giả", "Thể loại"});
         searchKeywordField = new JTextField(22);
         JButton searchBtn = new JButton("Tìm kiếm");
         JButton showAllBtn = new JButton("Làm mới");
-        JButton deleteBtn = new JButton("Xóa tài liệu");
+        deleteDocBtn = new JButton("Xóa tài liệu");
 
         searchBtn.addActionListener(e -> controller.handleSearchDocuments(
                 (String) searchTypeCombo.getSelectedItem(), searchKeywordField.getText()));
@@ -106,7 +159,7 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
             searchKeywordField.setText("");
             controller.handleLoadAllDocuments();
         });
-        deleteBtn.addActionListener(e -> {
+        deleteDocBtn.addActionListener(e -> {
             int row = docTable.getSelectedRow();
             if (row < 0) {
                 showError("Vui lòng chọn một tài liệu trên bảng để xóa!");
@@ -122,7 +175,7 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
         searchPanel.add(searchKeywordField);
         searchPanel.add(searchBtn);
         searchPanel.add(showAllBtn);
-        searchPanel.add(deleteBtn);
+        searchPanel.add(deleteDocBtn);
         panel.add(searchPanel, BorderLayout.NORTH);
 
         // Bảng danh sách tài liệu
@@ -135,9 +188,9 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
         docTable.setRowHeight(24);
         panel.add(new JScrollPane(docTable), BorderLayout.CENTER);
 
-        // Form thêm tài liệu
-        JPanel addPanel = new JPanel(new GridLayout(2, 4, 8, 8));
-        addPanel.setBorder(new TitledBorder("Thêm tài liệu mới"));
+        // Form thêm tài liệu (Chỉ hiển thị cho Thủ thư - UC5)
+        librarianAddDocPanel = new JPanel(new GridLayout(2, 4, 8, 8));
+        librarianAddDocPanel.setBorder(new TitledBorder("Thêm tài liệu mới (Dành cho Thủ thư)"));
 
         docTypeCombo = new JComboBox<>(new String[]{"EBOOK", "AUDIOBOOK", "JOURNAL"});
         docIdField = new JTextField("TL05");
@@ -165,16 +218,16 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
             }
         });
 
-        addPanel.add(createField("Loại tài liệu:", docTypeCombo));
-        addPanel.add(createField("Mã tài liệu:", docIdField));
-        addPanel.add(createField("Tiêu đề:", docTitleField));
-        addPanel.add(createField("Tác giả:", docAuthorField));
-        addPanel.add(createField("Thể loại:", docCategoryField));
-        addPanel.add(createField("Chi phí (VNĐ):", docCostField));
-        addPanel.add(createField("Thông tin thêm (Trang;Định dạng):", docExtraField));
-        addPanel.add(addBtn);
+        librarianAddDocPanel.add(createField("Loại tài liệu:", docTypeCombo));
+        librarianAddDocPanel.add(createField("Mã tài liệu:", docIdField));
+        librarianAddDocPanel.add(createField("Tiêu đề:", docTitleField));
+        librarianAddDocPanel.add(createField("Tác giả:", docAuthorField));
+        librarianAddDocPanel.add(createField("Thể loại:", docCategoryField));
+        librarianAddDocPanel.add(createField("Chi phí (VNĐ):", docCostField));
+        librarianAddDocPanel.add(createField("Thông tin thêm (Trang;Định dạng):", docExtraField));
+        librarianAddDocPanel.add(addBtn);
 
-        panel.add(addPanel, BorderLayout.SOUTH);
+        panel.add(librarianAddDocPanel, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -184,9 +237,9 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
 
         JPanel topPanel = new JPanel(new GridLayout(1, 2, 10, 10));
 
-        // Khung mượn tài liệu
+        // Khung mượn tài liệu (UC2)
         JPanel borrowBox = new JPanel(new GridLayout(4, 2, 6, 6));
-        borrowBox.setBorder(new TitledBorder("Đăng ký mượn"));
+        borrowBox.setBorder(new TitledBorder("Đăng ký mượn & Tùy chọn dịch vụ"));
         borrowReaderCombo = new JComboBox<>();
         borrowDocCombo = new JComboBox<>();
         drmCheckBox = new JCheckBox("Bảo vệ bản quyền (+5,000đ)", true);
@@ -214,7 +267,7 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
         borrowBox.add(new JLabel(""));
         borrowBox.add(borrowBtn);
 
-        // Khung trả tài liệu
+        // Khung trả tài liệu (UC3)
         JPanel returnBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 20));
         returnBox.setBorder(new TitledBorder("Trả tài liệu"));
         JButton returnSelectedBtn = new JButton("Trả phiếu đang chọn dưới bảng");
@@ -233,7 +286,7 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
         topPanel.add(returnBox);
         panel.add(topPanel, BorderLayout.NORTH);
 
-        // Bảng danh sách phiếu mượn
+        // Bảng danh sách phiếu mượn (UC3 & UC6)
         String[] loanCols = {"Mã phiếu", "Độc giả", "Ngày mượn", "Trạng thái", "Chi tiết tài liệu & Tùy chọn", "Tổng phí (VNĐ)"};
         loanTableModel = new DefaultTableModel(loanCols, 0) {
             @Override
@@ -250,13 +303,14 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBorder(new EmptyBorder(6, 6, 6, 6));
 
-        JPanel regPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-        regPanel.setBorder(new TitledBorder("Thêm độc giả"));
+        // 1. Khung Thêm độc giả mới (Dành cho Thủ thư - UC6)
+        librarianAddReaderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        librarianAddReaderPanel.setBorder(new TitledBorder("Quản lý hồ sơ độc giả (Dành cho Thủ thư)"));
         readerIdField = new JTextField("DG04", 8);
         readerNameField = new JTextField(15);
         readerEmailField = new JTextField(16);
         readerSubCheck = new JCheckBox("Nhận thông báo sách mới", true);
-        JButton addReaderBtn = new JButton("Lưu độc giả");
+        JButton addReaderBtn = new JButton("Thêm độc giả");
 
         addReaderBtn.addActionListener(e -> controller.handleRegisterReader(
                 readerIdField.getText(),
@@ -265,15 +319,37 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
                 readerSubCheck.isSelected()
         ));
 
-        regPanel.add(new JLabel("Mã ĐG:"));
-        regPanel.add(readerIdField);
-        regPanel.add(new JLabel("Họ tên:"));
-        regPanel.add(readerNameField);
-        regPanel.add(new JLabel("Email:"));
-        regPanel.add(readerEmailField);
-        regPanel.add(readerSubCheck);
-        regPanel.add(addReaderBtn);
-        panel.add(regPanel, BorderLayout.NORTH);
+        librarianAddReaderPanel.add(new JLabel("Mã ĐG:"));
+        librarianAddReaderPanel.add(readerIdField);
+        librarianAddReaderPanel.add(new JLabel("Họ tên:"));
+        librarianAddReaderPanel.add(readerNameField);
+        librarianAddReaderPanel.add(new JLabel("Email:"));
+        librarianAddReaderPanel.add(readerEmailField);
+        librarianAddReaderPanel.add(readerSubCheck);
+        librarianAddReaderPanel.add(addReaderBtn);
+
+        // 2. Khung Đăng ký / Hủy nhận thông báo tự động
+        readerSubscriptionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
+        readerSubscriptionPanel.setBorder(new TitledBorder("Cài đặt nhận thông báo tài liệu mới tự động"));
+        readerSubStatusLabel = new JLabel("Trạng thái hiện tại: Đang nhận thông báo");
+        readerSubStatusLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
+        toggleSubBtn = new JButton("Hủy đăng ký nhận thông báo");
+
+        toggleSubBtn.addActionListener(e -> {
+            Reader active = getSelectedActiveReader();
+            if (active != null) {
+                controller.handleUpdateSubscription(active.getReaderId(), !active.isSubscribed());
+            }
+        });
+
+        readerSubscriptionPanel.add(readerSubStatusLabel);
+        readerSubscriptionPanel.add(toggleSubBtn);
+
+        JPanel topWrapper = new JPanel(new BorderLayout());
+        topWrapper.add(librarianAddReaderPanel, BorderLayout.NORTH);
+        topWrapper.add(readerSubscriptionPanel, BorderLayout.SOUTH);
+        readerSubscriptionPanel.setVisible(false);
+        panel.add(topWrapper, BorderLayout.NORTH);
 
         String[] readerCols = {"Mã ĐG", "Họ và tên", "Email", "Nhận thông báo", "Số thông báo"};
         readerTableModel = new DefaultTableModel(readerCols, 0) {
@@ -282,6 +358,7 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
         };
         readerTable = new JTable(readerTableModel);
         readerTable.setRowHeight(24);
+        readerTableScroll = new JScrollPane(readerTable);
 
         notificationArea = new JTextArea();
         notificationArea.setEditable(false);
@@ -291,13 +368,113 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
 
         JSplitPane splitPane = new JSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
-                new JScrollPane(readerTable),
+                readerTableScroll,
                 notifyScroll
         );
         splitPane.setDividerLocation(180);
         panel.add(splitPane, BorderLayout.CENTER);
 
         return panel;
+    }
+
+    private boolean isReaderMode() {
+        return roleCombo.getSelectedIndex() == 1;
+    }
+
+    private Reader getSelectedActiveReader() {
+        String item = (String) activeReaderCombo.getSelectedItem();
+        if (item == null) return null;
+        String id = item.split(" - ")[0].trim();
+        for (Reader r : cachedReaders) {
+            if (r.getReaderId().equalsIgnoreCase(id)) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    // Phân quyền hiển thị các chức năng theo đúng Vai trò
+    private void applyRolePermissions() {
+        boolean readerMode = isReaderMode();
+
+        // Thanh công cụ trên cùng
+        activeReaderLabel.setVisible(readerMode);
+        activeReaderCombo.setVisible(readerMode);
+        switchDbBtn.setVisible(!readerMode); // UC7 chỉ dành cho Thủ thư
+
+        // Tab 1: Độc giả chỉ Tìm kiếm & Xem (UC1); Thủ thư có thêm Thêm/Xóa tài liệu (UC5)
+        deleteDocBtn.setVisible(!readerMode);
+        librarianAddDocPanel.setVisible(!readerMode);
+        tabbedPane.setTitleAt(0, readerMode ? "Tra cứu tài liệu" : "Quản lý tài liệu");
+
+        // Tab 2: Ở chế độ Độc giả, khóa ô chọn Độc giả vào đúng tài khoản đang đăng nhập
+        borrowReaderCombo.setEnabled(!readerMode);
+        tabbedPane.setTitleAt(1, readerMode ? "Mượn / Trả & Lịch sử" : "Mượn / Trả tài liệu");
+
+        // Tab 3: Thủ thư quản lý toàn bộ độc giả (UC6); Độc giả bật/tắt thông báo & xem hộp thư riêng (UC4)
+        librarianAddReaderPanel.setVisible(!readerMode);
+        readerSubscriptionPanel.setVisible(readerMode);
+        tabbedPane.setTitleAt(2, readerMode ? "Thông báo của tôi" : "Độc giả & Thông báo");
+
+        syncViewsForCurrentRole();
+    }
+
+    private void syncViewsForCurrentRole() {
+        boolean readerMode = isReaderMode();
+        Reader activeReader = getSelectedActiveReader();
+
+        if (readerMode && activeReader != null) {
+            // Đồng bộ ComboBox mượn sách về đúng Độc giả đang chọn
+            String targetItem = activeReader.getReaderId() + " - " + activeReader.getFullName();
+            borrowReaderCombo.setSelectedItem(targetItem);
+
+            // Cập nhật trạng thái nút Đăng ký / Hủy nhận thông báo (UC4)
+            if (activeReader.isSubscribed()) {
+                readerSubStatusLabel.setText("Trạng thái của " + activeReader.getFullName() + ": Đang đăng ký nhận thông báo tự động");
+                toggleSubBtn.setText("Hủy nhận thông báo");
+            } else {
+                readerSubStatusLabel.setText("Trạng thái của " + activeReader.getFullName() + ": Đã tắt nhận thông báo");
+                toggleSubBtn.setText("Đăng ký nhận thông báo");
+            }
+        }
+
+        // Cập nhật bảng Phiếu mượn
+        loanTableModel.setRowCount(0);
+        for (LoanRecord l : cachedLoans) {
+            if (!readerMode || (activeReader != null && l.getReader().getReaderId().equalsIgnoreCase(activeReader.getReaderId()))) {
+                loanTableModel.addRow(new Object[]{
+                        l.getLoanId(),
+                        l.getReader().getFullName(),
+                        l.getBorrowDate().toString(),
+                        l.getStatusText(),
+                        l.getBorrowedDocument().getDescription(),
+                        String.format("%,.0f", l.getTotalCost())
+                });
+            }
+        }
+
+        // Cập nhật bảng Độc giả & Hộp thư thông báo
+        readerTableModel.setRowCount(0);
+        StringBuilder sb = new StringBuilder();
+        for (Reader r : cachedReaders) {
+            if (!readerMode || (activeReader != null && r.getReaderId().equalsIgnoreCase(activeReader.getReaderId()))) {
+                readerTableModel.addRow(new Object[]{
+                        r.getReaderId(),
+                        r.getFullName(),
+                        r.getEmail(),
+                        r.isSubscribed() ? "Đang nhận tin" : "Đã tắt",
+                        r.getNotifications().size()
+                });
+                for (String msg : r.getNotifications()) {
+                    sb.append("• ").append(msg).append("\n");
+                }
+            }
+        }
+        if (sb.length() == 0) {
+            sb.append("(Chưa có thông báo nào trong hộp thư)");
+        }
+        notificationArea.setText(sb.toString());
+        notificationArea.setCaretPosition(0);
     }
 
     private JPanel createField(String label, JComponent comp) {
@@ -340,41 +517,27 @@ public class SwingLibraryView extends JFrame implements ILibraryView {
 
     @Override
     public void showLoans(List<LoanRecord> loans) {
-        loanTableModel.setRowCount(0);
-        for (LoanRecord l : loans) {
-            loanTableModel.addRow(new Object[]{
-                    l.getLoanId(),
-                    l.getReader().getFullName(),
-                    l.getBorrowDate().toString(),
-                    l.getStatusText(),
-                    l.getBorrowedDocument().getDescription(),
-                    String.format("%,.0f", l.getTotalCost())
-            });
-        }
+        this.cachedLoans = new ArrayList<>(loans);
+        syncViewsForCurrentRole();
     }
 
     @Override
     public void showReadersAndNotifications(List<Reader> readers) {
-        readerTableModel.setRowCount(0);
+        this.cachedReaders = new ArrayList<>(readers);
+        updatingCombos = true;
+        String prevSelected = (String) activeReaderCombo.getSelectedItem();
         borrowReaderCombo.removeAllItems();
-
-        StringBuilder sb = new StringBuilder();
+        activeReaderCombo.removeAllItems();
         for (Reader r : readers) {
-            readerTableModel.addRow(new Object[]{
-                    r.getReaderId(),
-                    r.getFullName(),
-                    r.getEmail(),
-                    r.isSubscribed() ? "Có" : "Không",
-                    r.getNotifications().size()
-            });
-            borrowReaderCombo.addItem(r.getReaderId() + " - " + r.getFullName());
-
-            for (String msg : r.getNotifications()) {
-                sb.append("• ").append(msg).append("\n");
-            }
+            String item = r.getReaderId() + " - " + r.getFullName();
+            borrowReaderCombo.addItem(item);
+            activeReaderCombo.addItem(item);
         }
-        notificationArea.setText(sb.toString());
-        notificationArea.setCaretPosition(0);
+        if (prevSelected != null) {
+            activeReaderCombo.setSelectedItem(prevSelected);
+        }
+        updatingCombos = false;
+        syncViewsForCurrentRole();
     }
 
     @Override

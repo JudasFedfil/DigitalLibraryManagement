@@ -30,6 +30,7 @@ public class LibraryManagementFacade {
         seedInitialData();
     }
 
+    // UC7 (Thủ thư): Chuyển đổi nguồn lưu trữ dữ liệu lúc runtime
     public void switchRepository(IDataRepository newRepository) {
         List<IDocument> currentDocs = this.repository.findAllDocuments();
         List<Reader> currentReaders = this.repository.findAllReaders();
@@ -47,9 +48,10 @@ public class LibraryManagementFacade {
 
     public String getSystemStatusSummary() {
         return DatabaseConnectionManager.getInstance().getConnectionInfo()
-                + " | Nguồn lưu trữ: " + repository.getRepositoryName();
+                + " | Nguồn: " + repository.getRepositoryName();
     }
 
+    // UC6 (Thủ thư): Đăng ký độc giả mới & gắn vào danh sách nhận thông báo
     public Reader registerReader(String readerId, String fullName, String email, boolean subscribeNotifications) {
         if (readerId == null || readerId.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã độc giả không được để trống!");
@@ -62,6 +64,25 @@ public class LibraryManagementFacade {
         return reader;
     }
 
+    // UC4 (Độc giả): Đăng ký hoặc Hủy nhận thông báo tài liệu mới tự động
+    public Reader updateReaderSubscription(String readerId, boolean subscribe) {
+        Reader reader = repository.findReaderById(readerId);
+        if (reader == null) {
+            throw new IllegalArgumentException("Không tìm thấy độc giả: " + readerId);
+        }
+        reader.setSubscribed(subscribe);
+        if (subscribe) {
+            notificationCenter.attach(reader);
+            reader.update("Bạn đã bật đăng ký nhận thông báo tài liệu mới tự động.");
+        } else {
+            notificationCenter.detach(reader);
+            reader.update("Bạn đã hủy đăng ký nhận thông báo tài liệu mới.");
+        }
+        repository.saveReader(reader);
+        return reader;
+    }
+
+    // UC5 (Thủ thư): Thêm tài liệu mới (Sử dụng Factory Method + Repository + Observer Pattern)
     public IDocument addNewDocument(String type, String id, String title, String author,
                                     String category, double baseCost, String extraMetadata) {
         if (id == null || id.trim().isEmpty()) {
@@ -77,10 +98,12 @@ public class LibraryManagementFacade {
         return newDoc;
     }
 
+    // UC5 (Thủ thư): Xóa tài liệu số
     public boolean deleteDocument(String docId) {
         return repository.deleteDocument(docId);
     }
 
+    // UC2 (Độc giả): Mượn tài liệu kèm tùy chọn dịch vụ bổ sung (Sử dụng Decorator Pattern)
     public LoanRecord borrowDocument(String readerId, String docId, boolean enableDRM, boolean enableOffline) {
         Reader reader = repository.findReaderById(readerId);
         if (reader == null) {
@@ -109,6 +132,7 @@ public class LibraryManagementFacade {
         return loanRecord;
     }
 
+    // UC3 (Độc giả): Trả tài liệu số
     public LoanRecord returnDocument(String loanId) {
         LoanRecord loan = repository.findLoanById(loanId);
         if (loan == null) {
@@ -123,7 +147,7 @@ public class LibraryManagementFacade {
         return loan;
     }
 
-    // Tìm kiếm tài liệu (Sử dụng Strategy Pattern)
+    // UC1 (Độc giả & Thủ thư): Tìm kiếm tài liệu đa chiến lược (Sử dụng Strategy Pattern)
     public List<IDocument> searchDocuments(String strategyType, String keyword) {
         if ("AUTHOR".equalsIgnoreCase(strategyType) || "Tác giả".equalsIgnoreCase(strategyType)) {
             searchContext.setStrategy(new SearchByAuthorStrategy());

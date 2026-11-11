@@ -62,6 +62,18 @@ public class LibraryController {
         }
     }
 
+    public void handleUpdateSubscription(String readerId, boolean subscribe) {
+        try {
+            Reader r = facade.updateReaderSubscription(readerId, subscribe);
+            refreshAllViews();
+            view.showMessage(subscribe
+                    ? "Đã bật nhận thông báo tự động cho độc giả: " + r.getFullName()
+                    : "Đã hủy nhận thông báo tự động cho độc giả: " + r.getFullName());
+        } catch (Exception e) {
+            view.showError(e.getMessage());
+        }
+    }
+
     public void handleAddDocument(String type, String id, String title, String author,
                                   String category, double baseCost, String extraMetadata) {
         try {
